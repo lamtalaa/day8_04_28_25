@@ -10,6 +10,7 @@ import UIKit
 class ResultsTableViewCell: UITableViewCell {
     
     @IBOutlet weak var textFieldLabel: UILabel!
+    
     @IBOutlet weak var firstURLLabel: UILabel!
     
     override func awakeFromNib() {

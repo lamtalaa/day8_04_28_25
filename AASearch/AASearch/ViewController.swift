@@ -7,9 +7,9 @@
 
 import UIKit
 
-class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
-
-    @IBOutlet weak var searchTextField: UITextField!
+class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
+    
+    @IBOutlet weak var searchBar: UISearchBar!
     @IBOutlet weak var tableView: UITableView!
     
     var results: [ResultItem] = []
@@ -19,12 +19,14 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         // Do any additional setup after loading the view.
         tableView.dataSource = self
         tableView.delegate = self
-        doApi(sarchedText: "Dallas, TX")
+        searchBar.delegate = self
+        doApi(searchedText: searchBar.text ?? "")
     }
     
-    func doApi(sarchedText: String) {
+    func doApi(searchedText: String) {
         
-    guard let url = URL(string: "https://api.duckduckgo.com/?q=American+Airlines&format=json&pretty=1") else {
+        let encoded = searchedText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+    guard let url = URL(string: "https://api.duckduckgo.com/?q=\(encoded)&format=json&pretty=1") else {
             return
         }
         
@@ -35,15 +37,18 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
           
           do {
               
-              let searchResponse = try JSONDecoder().decode(SearchResponse.self, from: data)
+               let searchResponse = try JSONDecoder().decode(SearchResponse.self, from: data)
               
+              DispatchQueue.main.async {
+                  self.results = searchResponse.Results
+                  self.tableView.reloadData()
+              }
               print(searchResponse)
               
           } catch {
               
           }
       }.resume()
-        
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -57,9 +62,15 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         cell?.firstURLLabel.text = item.FirstURL
         return cell ?? UITableViewCell()
     }
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.resignFirstResponder() // dismiss the keyboard
+        guard let query = searchBar.text, !query.isEmpty else { return }
+        doApi(searchedText: query)
+    }
     
-    @IBAction func searchButtonTapped(_ sender: UIButton) {
-        guard let query = searchTextField.text, !query.isEmpty else { return }
-        doApi(sarchedText: query)
+    @IBAction func searchButtonTapped(_ sender: Any) {
+        searchBar.resignFirstResponder() // dismiss the keyboard
+        guard let query = searchBar.text, !query.isEmpty else { return }
+        doApi(searchedText: query)
     }
 }
